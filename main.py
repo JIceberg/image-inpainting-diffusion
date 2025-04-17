@@ -54,12 +54,32 @@ def run_diffusion(image, dt=0.1, lambda_=0.5, num_iterations=100):
         new_image += dt * diffusion_term
     return new_image
 
-def run_diffusion_fidelity(image, mask=None, dt=0.1, lambda_=0.5, num_iterations=100):
+def run_diffusion_fidelity(image, mask=None, dt=0.1, lambda_=0.5, num_iterations=100, original_image=None, plot_metrics=False):
     new_image = image.copy()
-    for _ in range(num_iterations):
+    fidelity_errors = []
+    inpaint_errors = []
+
+    for iteration in range(num_iterations):
         diffusion_term = lambda_ * diffusion_iter(new_image)
         fidelity_term = (1 - lambda_) * fidelity_iter(new_image, image, mask)
         new_image += dt * (diffusion_term - fidelity_term)
+
+        if plot_metrics and original_image is not None:
+            fidelity_error, inpaint_error = compute_metrics(original_image, new_image, mask)
+            fidelity_errors.append(fidelity_error)
+            inpaint_errors.append(inpaint_error)
+
+    if plot_metrics:
+        plt.figure(figsize=(10, 5))
+        plt.plot(range(num_iterations), fidelity_errors, label="Fidelity Error")
+        plt.plot(range(num_iterations), inpaint_errors, label="Inpaint Error")
+        plt.xlabel("Iteration")
+        plt.ylabel("Error")
+        plt.title("Error Metrics vs Iteration")
+        plt.legend()
+        plt.grid()
+        plt.show()
+
     return new_image
 
 if __name__ == "__main__":
